@@ -41,14 +41,19 @@ const WEEKDAYS = [
     ]
 ];
 
-function getRestaurantMeals($website, $day, $oneFoodPattern, $startPattern = '')
+function getRestaurantMeals($website, $day, $oneFoodPattern, $startPattern = '', $foodCount = 5)
 {
 
     $dayName = WEEKDAYS[$day]['regex'];
 
     $data = file_get_contents($website);
 
-    $pattern = '~' . $startPattern . $dayName . $oneFoodPattern . $oneFoodPattern . $oneFoodPattern . $oneFoodPattern . $oneFoodPattern . '~i';
+    $foodPatterns = '';
+    for($i = 0; $i < $foodCount; $i++) {
+        $foodPatterns .= $oneFoodPattern;
+    }
+
+    $pattern = '~' . $startPattern . $dayName . $foodPatterns . '~i';
 
     $matches = [];
 
@@ -63,15 +68,17 @@ function printMealRow($name, $description, $price)
     echo "<br>";
 }
 
-function printRestaurant($name, $data)
+function printRestaurant($name, $data, $foodCount = 5)
 {
     echo "<div class='restaurant'>" . $name . "</div>";
 
     if(!isset($data[1])) {
         echo "Data pro tento den nejsou k dispozici.";
     } else {
-        for ($i = 2; $i < 17; $i = $i + 3) {
-            printMealRow($data[$i], $data[$i + 1], $data[$i + 2]);
+        for ($i = 2; $i < $foodCount * 3 + 2; $i = $i + 3) {
+            if(isset($data[$i]) && isset($data[$i + 1]) && isset($data[$i + 2])) {
+                printMealRow($data[$i], $data[$i + 1], $data[$i + 2]);
+            }
         }
     }
 }
@@ -144,14 +151,15 @@ foreach (WEEKDAYS as $key => $weekday) {
 echo "<br>";
 echo "<br>";
 echo "<div class='restaurantsContainer'>";
-$matches = getRestaurantMeals(GOLDEN_NEPAL_WEBSITE, $day, '[\s\S]*?item_title">([^<]+)[\s\S]*?desc__content">([^<]+)[\s\S]*?item-price">([^<]+)', '.*?menu-list__title">');
-printRestaurant('Golden Nepal', $matches);
 
-$matches = getRestaurantMeals(U_BILEHO_BERANKA_WEBSITE, $day, '[\s\S]*?<div class="mc-item">[\s\S]+?mc-text">([^(]+?)\s(\([\d,\s]+\))[\s\S]+?mc-price">([\d\s\S^<]*?)<\/span>[\s\S]*?<\/div>', '<h2>');
-printRestaurant('U Bílého Beránka', $matches);
+$matches = getRestaurantMeals(U_BILEHO_BERANKA_WEBSITE, $day, '[\s\S]*?<div class="mc-item">[\s\S]+?mc-text">([^(]+?)\s(\([\d,\s]+\))[\s\S]+?mc-price">([\d\s\S^<]*?)<\/span>[\s\S]*?<\/div>', '<h2>', 6);
+printRestaurant('U Bílého Beránka', $matches, 6);
 
-$matches = getRestaurantMeals(LIGHT_OF_INDIA_WEBSITE, $day, '[\s\S]*?<br>\S*\s*([\s\S]*?)\s*?(\([\s\S]*?)\s(\d+\s*?Kč)', '<H2>');
-printRestaurant('Light of India', $matches);
+$matches = getRestaurantMeals(GOLDEN_NEPAL_WEBSITE, $day, '[\s\S]*?item_title">([^<]+)[\s\S]*?desc__content">([^<]+)[\s\S]*?item-price">([^<]+)', '.*?menu-list__title">', 5);
+printRestaurant('Golden Nepal', $matches, 5);
+
+$matches = getRestaurantMeals(LIGHT_OF_INDIA_WEBSITE, $day, '[\s\S]*?<br>\S*\s*([\s\S]*?)\s*?(\([\s\S]*?)\s(\d+\s*?Kč)', '<H2>', 5);
+printRestaurant('Light of India', $matches, 5);
 
 echo "</div>";
 
